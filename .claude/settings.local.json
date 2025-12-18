@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/charl/Downloads/**)",
+      "Bash(copy \"..\\mobile\\credentials\\android\\keystore.jks\" \"android\\app\\upload-keystore.jks\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
