@@ -1,12 +1,11 @@
+import 'package:betcha_flutter/models/transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/wallet_provider.dart';
-import '../../services/wallet_service.dart';
 import '../settings/settings_screen.dart';
 import '../profile/edit_profile_screen.dart';
-import 'transaction_history_screen.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -15,7 +14,8 @@ class WalletScreen extends StatefulWidget {
   State<WalletScreen> createState() => _WalletScreenState();
 }
 
-class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderStateMixin {
+class _WalletScreenState extends State<WalletScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = false;
 
@@ -68,11 +68,17 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: AppTheme.neonBlue)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.neonBlue),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Purchase', style: TextStyle(color: AppTheme.hotPink)),
+            child: const Text(
+              'Purchase',
+              style: TextStyle(color: AppTheme.hotPink),
+            ),
           ),
         ],
       ),
@@ -84,7 +90,7 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
 
     try {
       final walletProvider = context.read<WalletProvider>();
-      await walletProvider.purchasePoints(amount.toString());
+      await walletProvider.purchasePoints(amount.toString(), packageId: '');
 
       if (mounted) {
         await context.read<AuthProvider>().refreshUser();
@@ -128,14 +134,20 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AppTheme.neonBlue)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.neonBlue),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               context.read<AuthProvider>().logout();
             },
-            child: const Text('Logout', style: TextStyle(color: AppTheme.hotPink)),
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: AppTheme.hotPink),
+            ),
           ),
         ],
       ),
@@ -154,7 +166,7 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
-      body: SafeAreaView(
+      body: SafeArea(
         child: Consumer2<AuthProvider, WalletProvider>(
           builder: (context, authProvider, walletProvider, child) {
             final user = authProvider.user;
@@ -188,11 +200,16 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.settings, color: AppTheme.neonBlue),
+                          icon: const Icon(
+                            Icons.settings,
+                            color: AppTheme.neonBlue,
+                          ),
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsScreen(),
+                              ),
                             );
                           },
                         ),
@@ -209,7 +226,9 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const EditProfileScreen(),
+                              ),
                             );
                           },
                           child: Container(
@@ -217,7 +236,9 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
                             decoration: BoxDecoration(
                               color: AppTheme.darkSlateGray,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppTheme.neonBlue.withAlpha(77)),
+                              border: Border.all(
+                                color: AppTheme.neonBlue.withAlpha(77),
+                              ),
                             ),
                             child: Column(
                               children: [
@@ -512,18 +533,12 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
             const SizedBox(height: 16),
             const Text(
               'No transactions yet',
-              style: TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
             ),
             const SizedBox(height: 8),
             const Text(
               'Your transaction history will appear here',
-              style: TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
             ),
           ],
         ),
@@ -567,10 +582,7 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
                 const SizedBox(height: 4),
                 Text(
                   '\$$price',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.hotPink,
-                  ),
+                  style: const TextStyle(fontSize: 14, color: AppTheme.hotPink),
                 ),
                 if (badge != null) ...[
                   const SizedBox(height: 2),
@@ -623,10 +635,7 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary,
-            ),
+            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
           ),
         ],
       ),

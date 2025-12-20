@@ -128,7 +128,9 @@ class BetProvider with ChangeNotifier {
       if (kDebugMode) {
         print('✅ Loaded ${_scores.length} scores');
         for (var score in _scores) {
-          print('  - Hole ${score.holeNumber}: ${score.strokes} strokes (user: ${score.userId})');
+          print(
+            '  - Hole ${score.holeNumber}: ${score.strokes} strokes (user: ${score.userId})',
+          );
         }
       }
       notifyListeners();
@@ -240,7 +242,9 @@ class BetProvider with ChangeNotifier {
   }) async {
     try {
       if (kDebugMode) {
-        print('📝 Submitting score: betId=$betId, hole=$holeNumber, strokes=$strokes');
+        print(
+          '📝 Submitting score: betId=$betId, hole=$holeNumber, strokes=$strokes',
+        );
       }
       await _betService.submitScore(
         betId: betId,
@@ -256,6 +260,16 @@ class BetProvider with ChangeNotifier {
       if (kDebugMode) {
         print('❌ Error submitting score: ${e.message}');
       }
+      _errorMessage = e.message;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadBetOdds(String betId) async {
+    try {
+      _odds = await _betService.getOdds(betId);
+      notifyListeners();
+    } on ApiException catch (e) {
       _errorMessage = e.message;
       notifyListeners();
     }

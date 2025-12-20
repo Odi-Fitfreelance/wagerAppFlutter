@@ -55,7 +55,8 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
-  Future<void> purchasePoints({
+  Future<void> purchasePoints(
+    String string, {
     required String packageId,
     String? paymentMethodId,
   }) async {

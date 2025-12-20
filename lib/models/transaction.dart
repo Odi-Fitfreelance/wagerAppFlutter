@@ -33,18 +33,39 @@ enum TransactionType {
   judgeFee,
 }
 
+// Custom converter for amount that handles both num and String
+class AmountConverter implements JsonConverter<double, dynamic> {
+  const AmountConverter();
+
+  @override
+  double fromJson(dynamic json) {
+    if (json == null) return 0.0;
+    if (json is num) return json.toDouble();
+    if (json is String) return double.tryParse(json) ?? 0.0;
+    return 0.0;
+  }
+
+  @override
+  dynamic toJson(double object) => object;
+}
+
 @JsonSerializable()
 class Transaction {
   final String id;
   @JsonKey(name: 'user_id')
   final String? userId;
   final TransactionType type;
+
+  @AmountConverter() // ← This fixes the crash!
   final double amount;
+
   final String? currency;
   final String? status;
   final String? description;
+
   @JsonKey(name: 'reference_id')
   final String? referenceId;
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
@@ -62,6 +83,7 @@ class Transaction {
 
   factory Transaction.fromJson(Map<String, dynamic> json) =>
       _$TransactionFromJson(json);
+
   Map<String, dynamic> toJson() => _$TransactionToJson(this);
 
   bool get isCredit =>
@@ -83,18 +105,17 @@ class Transaction {
       type == TransactionType.judgeFee;
 }
 
-// Helper function to convert string or num to num
+// Your helper functions (already good)
 num _numFromJson(dynamic value) {
   if (value is num) return value;
-  if (value is String) return num.parse(value);
+  if (value is String) return num.tryParse(value) ?? 0;
   return 0;
 }
 
-// Helper function to convert string or num to int
 int _intFromJson(dynamic value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
-  if (value is String) return int.parse(value);
+  if (value is String) return int.tryParse(value) ?? 0;
   return 0;
 }
 
@@ -130,6 +151,7 @@ class WalletStats {
 
   factory WalletStats.fromJson(Map<String, dynamic> json) =>
       _$WalletStatsFromJson(json);
+
   Map<String, dynamic> toJson() => _$WalletStatsToJson(this);
 
   double get winRate => (totalWins + totalLosses) > 0
