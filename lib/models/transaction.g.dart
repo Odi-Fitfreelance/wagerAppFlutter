@@ -8,12 +8,13 @@ part of 'transaction.dart';
 
 Transaction _$TransactionFromJson(Map<String, dynamic> json) => Transaction(
   id: json['id'] as String,
-  userId: json['user_id'] as String,
+  userId: json['user_id'] as String?,
   type: $enumDecode(_$TransactionTypeEnumMap, json['type']),
   amount: (json['amount'] as num).toDouble(),
-  balance: (json['balance'] as num).toDouble(),
+  currency: json['currency'] as String?,
+  status: json['status'] as String?,
   description: json['description'] as String?,
-  betId: json['bet_id'] as String?,
+  referenceId: json['reference_id'] as String?,
   createdAt: DateTime.parse(json['created_at'] as String),
 );
 
@@ -23,22 +24,28 @@ Map<String, dynamic> _$TransactionToJson(Transaction instance) =>
       'user_id': instance.userId,
       'type': _$TransactionTypeEnumMap[instance.type]!,
       'amount': instance.amount,
-      'balance': instance.balance,
+      'currency': instance.currency,
+      'status': instance.status,
       'description': instance.description,
-      'bet_id': instance.betId,
+      'reference_id': instance.referenceId,
       'created_at': instance.createdAt.toIso8601String(),
     };
 
 const _$TransactionTypeEnumMap = {
   TransactionType.betPlaced: 'bet_placed',
   TransactionType.betWon: 'bet_won',
+  TransactionType.betLost: 'bet_lost',
+  TransactionType.betCancelled: 'bet_cancelled',
   TransactionType.betRefund: 'bet_refund',
+  TransactionType.purchase: 'purchase',
   TransactionType.pointsPurchase: 'points_purchase',
+  TransactionType.redeem: 'redeem',
   TransactionType.withdrawal: 'withdrawal',
   TransactionType.storePurchase: 'store_purchase',
   TransactionType.outsideBetPlaced: 'outside_bet_placed',
   TransactionType.outsideBetWon: 'outside_bet_won',
   TransactionType.achievementBonus: 'achievement_bonus',
+  TransactionType.judgeFee: 'judge_fee',
 };
 
 WalletStats _$WalletStatsFromJson(Map<String, dynamic> json) => WalletStats(

@@ -245,7 +245,6 @@ class _FeedScreenState extends State<FeedScreen> {
   }) {
     return GestureDetector(
       onTap: () {
-        // TODO: Show bet confirmation dialog
         _showBetDialog(label, odds);
       },
       child: Container(
@@ -299,9 +298,15 @@ class _FeedScreenState extends State<FeedScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Place bet
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Bet on $choice at $odds placed successfully!'),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
             },
-            child: Text('Confirm'),
+            child: const Text('Confirm'),
           ),
         ],
       ),

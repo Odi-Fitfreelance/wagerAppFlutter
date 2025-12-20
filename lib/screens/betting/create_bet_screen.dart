@@ -41,46 +41,61 @@ class _CreateBetScreenState extends State<CreateBetScreen> {
 
     // Check if user has enough balance
     if (authProvider.user!.walletBalance < stake) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Insufficient balance to create this bet'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Insufficient balance to create this bet'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final betProvider = context.read<BetProvider>();
-    final bet = await betProvider.createBet(
-      name: _nameController.text.trim(),
-      betType: _betType,
-      stakeAmount: stake,
-      maxPlayers: maxPlayers,
-      isPublic: _isPublic,
-      allowOutsideBackers: _allowOutsideBackers,
-    );
+    try {
+      final betProvider = context.read<BetProvider>();
+      final bet = await betProvider.createBet(
+        name: _nameController.text.trim(),
+        betType: _betType,
+        stakeAmount: stake,
+        maxPlayers: maxPlayers,
+        isPublic: _isPublic,
+        allowOutsideBackers: _allowOutsideBackers,
+      );
 
-    setState(() => _isLoading = false);
-
-    if (mounted) {
-      if (bet != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Bet created successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      } else if (betProvider.errorMessage != null) {
+      if (mounted) {
+        if (bet != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bet created successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        } else if (betProvider.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(betProvider.errorMessage!),
+              backgroundColor: Colors.red,
+            ),
+          );
+          betProvider.clearError();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(betProvider.errorMessage!),
+            content: Text('Error creating bet: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
-        betProvider.clearError();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }

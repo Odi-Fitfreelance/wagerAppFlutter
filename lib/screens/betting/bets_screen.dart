@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../models/bet.dart';
 import 'create_bet_screen.dart';
 import 'score_entry_sheet.dart';
+import 'bet_details_screen.dart';
 
 class BetsScreen extends StatefulWidget {
   const BetsScreen({super.key});
@@ -94,20 +95,82 @@ class _BetsScreenState extends State<BetsScreen>
   }
 }
 
-class _PublicBetsTab extends StatelessWidget {
+class _PublicBetsTab extends StatefulWidget {
   const _PublicBetsTab();
+
+  @override
+  State<_PublicBetsTab> createState() => _PublicBetsTabState();
+}
+
+class _PublicBetsTabState extends State<_PublicBetsTab> {
+  final Map<String, bool> _participationCache = {};
+  bool _isLoadingParticipation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadParticipationData();
+    });
+  }
+
+  Future<void> _loadParticipationData() async {
+    if (_isLoadingParticipation) return;
+
+    setState(() => _isLoadingParticipation = true);
+
+    final betProvider = context.read<BetProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final userId = authProvider.user?.id;
+
+    if (userId == null) {
+      setState(() => _isLoadingParticipation = false);
+      return;
+    }
+
+    // Check participation for all public bets
+    for (final bet in betProvider.publicBets) {
+      if (!_participationCache.containsKey(bet.id)) {
+        await betProvider.loadParticipants(bet.id);
+        final isParticipant = betProvider.participants.any((p) => p.userId == userId);
+        _participationCache[bet.id] = isParticipant;
+      }
+    }
+
+    if (mounted) {
+      setState(() => _isLoadingParticipation = false);
+    }
+  }
+
+  List<Bet> _filterBets(List<Bet> bets) {
+    // Show:
+    // 1. All in-progress bets (regardless of participation)
+    // 2. Open bets where user is NOT a participant
+    return bets.where((bet) {
+      if (bet.status == BetStatus.inProgress || bet.status == BetStatus.active) {
+        return true; // Show all in-progress bets
+      }
+
+      if (bet.status == BetStatus.open) {
+        final isParticipant = _participationCache[bet.id] ?? false;
+        return !isParticipant; // Only show if NOT a participant
+      }
+
+      return false; // Don't show completed or cancelled bets
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<BetProvider>(
       builder: (context, betProvider, child) {
-        if (betProvider.isLoading) {
+        if (betProvider.isLoading && betProvider.publicBets.isEmpty) {
           return Center(
             child: CircularProgressIndicator(color: AppTheme.hotPink),
           );
         }
 
-        if (betProvider.errorMessage != null) {
+        if (betProvider.errorMessage != null && betProvider.publicBets.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -124,9 +187,9 @@ class _PublicBetsTab extends StatelessWidget {
           );
         }
 
-        final bets = betProvider.publicBets;
+        final filteredBets = _filterBets(betProvider.publicBets);
 
-        if (bets.isEmpty) {
+        if (filteredBets.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -143,6 +206,15 @@ class _PublicBetsTab extends StatelessWidget {
                     color: AppTheme.textSecondary,
                     fontSize: 16,
                   ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'In-progress bets and open bets you\'re not in will appear here',
+                  style: TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
@@ -162,13 +234,17 @@ class _PublicBetsTab extends StatelessWidget {
         }
 
         return RefreshIndicator(
-          onRefresh: () => betProvider.loadPublicBets(),
+          onRefresh: () async {
+            _participationCache.clear();
+            await betProvider.loadPublicBets();
+            await _loadParticipationData();
+          },
           color: AppTheme.hotPink,
           backgroundColor: AppTheme.darkSlateGray,
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: bets.length,
-            itemBuilder: (context, index) => _BetCard(bet: bets[index], isMyBet: false),
+            itemCount: filteredBets.length,
+            itemBuilder: (context, index) => _BetCard(bet: filteredBets[index], isMyBet: false),
           ),
         );
       },
@@ -354,8 +430,36 @@ class _BetCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            // TODO: Navigate to bet details
+          onTap: () async {
+            final authProvider = context.read<AuthProvider>();
+            final betProvider = context.read<BetProvider>();
+
+            // Load participants to check if user is a participant
+            await betProvider.loadParticipants(bet.id);
+
+            final isParticipant = betProvider.participants.any(
+              (p) => p.userId == authProvider.user?.id,
+            );
+
+            if (!context.mounted) return;
+
+            if (isParticipant) {
+              // Show score entry for participants
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => ScoreEntrySheet(bet: bet),
+              );
+            } else {
+              // Show bet details for non-participants
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BetDetailsScreen(bet: bet),
+                ),
+              );
+            }
           },
           child: Padding(
             padding: const EdgeInsets.all(16),

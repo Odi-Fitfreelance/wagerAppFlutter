@@ -37,10 +37,18 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         return 'Bet Placed';
       case TransactionType.betWon:
         return 'Bet Won';
+      case TransactionType.betLost:
+        return 'Bet Lost';
+      case TransactionType.betCancelled:
+        return 'Bet Cancelled';
       case TransactionType.betRefund:
         return 'Refund';
+      case TransactionType.purchase:
+        return 'Purchase';
       case TransactionType.pointsPurchase:
         return 'Points Purchase';
+      case TransactionType.redeem:
+        return 'Redeemed';
       case TransactionType.withdrawal:
         return 'Withdrawal';
       case TransactionType.storePurchase:
@@ -51,6 +59,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         return 'Outside Bet Won';
       case TransactionType.achievementBonus:
         return 'Achievement Bonus';
+      case TransactionType.judgeFee:
+        return 'Judge Fee';
     }
   }
 
@@ -62,16 +72,24 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       case TransactionType.betWon:
       case TransactionType.outsideBetWon:
         return Icons.emoji_events;
+      case TransactionType.betLost:
+        return Icons.trending_down;
+      case TransactionType.betCancelled:
       case TransactionType.betRefund:
         return Icons.replay;
+      case TransactionType.purchase:
       case TransactionType.pointsPurchase:
         return Icons.add_circle_outline;
+      case TransactionType.redeem:
+        return Icons.card_giftcard;
       case TransactionType.withdrawal:
         return Icons.account_balance_wallet_outlined;
       case TransactionType.storePurchase:
         return Icons.shopping_bag_outlined;
       case TransactionType.achievementBonus:
         return Icons.stars;
+      case TransactionType.judgeFee:
+        return Icons.gavel;
     }
   }
 
@@ -265,27 +283,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
             ),
           ],
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '$sign${transaction.amount.toStringAsFixed(2)}',
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Balance: ${transaction.balance.toStringAsFixed(2)}',
-              style: const TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 11,
-              ),
-            ),
-          ],
+        trailing: Text(
+          '$sign${transaction.amount.toStringAsFixed(2)}',
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
       ),
     );

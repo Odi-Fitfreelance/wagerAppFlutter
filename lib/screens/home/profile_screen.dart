@@ -4,10 +4,12 @@ import '../../config/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/wallet_provider.dart';
 import '../wallet/transaction_history_screen.dart';
+import '../wallet/wallet_screen.dart';
 import '../settings/settings_screen.dart';
 import '../profile/edit_profile_screen.dart';
 import '../profile/achievements_screen.dart';
 import '../store/store_screen.dart';
+import '../help/help_center_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -219,21 +221,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Expanded(
                                 child: OutlinedButton(
                                   onPressed: () {
-                                    // TODO: Navigate to add funds
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const WalletScreen(),
+                                      ),
+                                    );
                                   },
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.white,
                                     side: const BorderSide(
                                         color: Colors.white, width: 2),
                                   ),
-                                  child: const Text('Add Funds'),
+                                  child: const Text('Wallet'),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: OutlinedButton(
                                   onPressed: () {
-                                    // TODO: Navigate to withdraw
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Withdraw feature coming soon!'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
                                   },
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.white,
@@ -316,7 +328,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Icons.help_outline,
                       'Help & Support',
                       onTap: () {
-                        // TODO: Navigate to help
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const HelpCenterScreen(),
+                          ),
+                        );
                       },
                     ),
                     _buildMenuItem(

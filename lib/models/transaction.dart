@@ -7,10 +7,18 @@ enum TransactionType {
   betPlaced,
   @JsonValue('bet_won')
   betWon,
+  @JsonValue('bet_lost')
+  betLost,
+  @JsonValue('bet_cancelled')
+  betCancelled,
   @JsonValue('bet_refund')
   betRefund,
+  @JsonValue('purchase')
+  purchase,
   @JsonValue('points_purchase')
   pointsPurchase,
+  @JsonValue('redeem')
+  redeem,
   @JsonValue('withdrawal')
   withdrawal,
   @JsonValue('store_purchase')
@@ -21,30 +29,34 @@ enum TransactionType {
   outsideBetWon,
   @JsonValue('achievement_bonus')
   achievementBonus,
+  @JsonValue('judge_fee')
+  judgeFee,
 }
 
 @JsonSerializable()
 class Transaction {
   final String id;
   @JsonKey(name: 'user_id')
-  final String userId;
+  final String? userId;
   final TransactionType type;
   final double amount;
-  final double balance;
+  final String? currency;
+  final String? status;
   final String? description;
-  @JsonKey(name: 'bet_id')
-  final String? betId;
+  @JsonKey(name: 'reference_id')
+  final String? referenceId;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
   Transaction({
     required this.id,
-    required this.userId,
+    this.userId,
     required this.type,
     required this.amount,
-    required this.balance,
+    this.currency,
+    this.status,
     this.description,
-    this.betId,
+    this.referenceId,
     required this.createdAt,
   });
 
@@ -54,16 +66,21 @@ class Transaction {
 
   bool get isCredit =>
       type == TransactionType.betWon ||
+      type == TransactionType.betCancelled ||
       type == TransactionType.betRefund ||
+      type == TransactionType.purchase ||
       type == TransactionType.pointsPurchase ||
+      type == TransactionType.redeem ||
       type == TransactionType.outsideBetWon ||
       type == TransactionType.achievementBonus;
 
   bool get isDebit =>
       type == TransactionType.betPlaced ||
+      type == TransactionType.betLost ||
       type == TransactionType.withdrawal ||
       type == TransactionType.storePurchase ||
-      type == TransactionType.outsideBetPlaced;
+      type == TransactionType.outsideBetPlaced ||
+      type == TransactionType.judgeFee;
 }
 
 // Helper function to convert string or num to num
