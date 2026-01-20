@@ -45,5 +45,26 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Deep Link Configuration for KYC -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.friendlywager.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>friendlywager</string>
+			</array>
+		</dict>
+	</array>
+	
+	<!-- Allow app to query for custom URL schemes (iOS 9+) -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>friendlywager</string>
+	</array>
 </dict>
 </plist>

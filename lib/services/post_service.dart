@@ -14,18 +14,23 @@ class PostService {
     List<String>? mediaUrls,
     String? betId,
   }) async {
-    final response = await _client.post('/posts', data: {
-      'content': content,
-      'type': type,
-      'visibility': visibility,
-      if (mediaUrls != null) 'media_urls': mediaUrls,
-      if (betId != null) 'bet_id': betId,
-    });
+    final response = await _client.post(
+      '/posts',
+      data: {
+        'content': content,
+        'type': type,
+        'visibility': visibility,
+        if (mediaUrls != null) 'media_urls': mediaUrls,
+        if (betId != null) 'bet_id': betId,
+      },
+    );
     return Post.fromJson(response.data['post']);
   }
 
-  Future<String> uploadMedia(String filePath,
-      {void Function(int, int)? onProgress}) async {
+  Future<String> uploadMedia(
+    String filePath, {
+    void Function(int, int)? onProgress,
+  }) async {
     final response = await _client.uploadFile(
       '/posts/upload',
       'media',
@@ -45,18 +50,24 @@ class PostService {
     if (kDebugMode) {
       print('📡 Fetching feed from API...');
     }
-    final response = await _client.get('/posts/feed', queryParameters: {
-      'page': page,
-      'limit': limit,
-      if (filter != null) 'filter': filter,
-    });
+    final response = await _client.get(
+      '/posts/feed',
+      queryParameters: {
+        'page': page,
+        'limit': limit,
+        if (filter != null) 'filter': filter,
+      },
+    );
     if (kDebugMode) {
       print('📦 Raw feed response: ${response.data}');
     }
 
-    if (response.data['posts'] != null && (response.data['posts'] as List).isNotEmpty) {
+    if (response.data['posts'] != null &&
+        (response.data['posts'] as List).isNotEmpty) {
       if (kDebugMode) {
-        print('📦 First post sample: ${(response.data['posts'] as List).first}');
+        print(
+          '📦 First post sample: ${(response.data['posts'] as List).first}',
+        );
       }
     }
 
@@ -70,23 +81,29 @@ class PostService {
     return Post.fromJson(response.data['post']);
   }
 
-  Future<List<Post>> getUserPosts(String userId,
-      {int page = 1, int limit = 20}) async {
-    final response = await _client.get('/posts/user/$userId', queryParameters: {
-      'page': page,
-      'limit': limit,
-    });
+  Future<List<Post>> getUserPosts(
+    String userId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final response = await _client.get(
+      '/posts/user/$userId',
+      queryParameters: {'page': page, 'limit': limit},
+    );
     return (response.data['posts'] as List)
         .map((json) => Post.fromJson(json))
         .toList();
   }
 
-  Future<List<Post>> getBetPosts(String betId,
-      {int page = 1, int limit = 20}) async {
-    final response = await _client.get('/posts/bet/$betId', queryParameters: {
-      'page': page,
-      'limit': limit,
-    });
+  Future<List<Post>> getBetPosts(
+    String betId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final response = await _client.get(
+      '/posts/bet/$betId',
+      queryParameters: {'page': page, 'limit': limit},
+    );
     return (response.data['posts'] as List)
         .map((json) => Post.fromJson(json))
         .toList();
@@ -97,10 +114,13 @@ class PostService {
     String? content,
     String? visibility,
   }) async {
-    final response = await _client.put('/posts/$postId', data: {
-      if (content != null) 'content': content,
-      if (visibility != null) 'visibility': visibility,
-    });
+    final response = await _client.put(
+      '/posts/$postId',
+      data: {
+        if (content != null) 'content': content,
+        if (visibility != null) 'visibility': visibility,
+      },
+    );
     return Post.fromJson(response.data['post']);
   }
 
@@ -116,12 +136,15 @@ class PostService {
     await _client.delete('/posts/$postId/like');
   }
 
-  Future<List<Comment>> getComments(String postId,
-      {int page = 1, int limit = 20}) async {
-    final response = await _client.get('/posts/$postId/comments', queryParameters: {
-      'limit': limit,
-      'offset': (page - 1) * limit,
-    });
+  Future<List<Comment>> getComments(
+    String postId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final response = await _client.get(
+      '/posts/$postId/comments',
+      queryParameters: {'limit': limit, 'offset': (page - 1) * limit},
+    );
     return (response.data['comments'] as List)
         .map((json) => Comment.fromJson(json))
         .toList();
@@ -132,10 +155,13 @@ class PostService {
     required String content,
     String? parentId,
   }) async {
-    final response = await _client.post('/posts/$postId/comments', data: {
-      'content': content,
-      if (parentId != null) 'parentCommentId': parentId,
-    });
+    final response = await _client.post(
+      '/posts/$postId/comments',
+      data: {
+        'content': content,
+        if (parentId != null) 'parentCommentId': parentId,
+      },
+    );
     return Comment.fromJson(response.data['comment']);
   }
 

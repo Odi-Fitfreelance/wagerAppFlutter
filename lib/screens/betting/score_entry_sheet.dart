@@ -65,10 +65,7 @@ class _ScoreEntrySheetState extends State<ScoreEntrySheet> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            AppTheme.deepNavy,
-            AppTheme.darkSlateGray,
-          ],
+          colors: [AppTheme.deepNavy, AppTheme.darkSlateGray],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -183,69 +180,76 @@ class _ScoreEntrySheetState extends State<ScoreEntrySheet> {
                   .firstOrNull;
 
               final myScores = betProvider.scores
-                  .where((s) => myParticipant != null && s.userId == myParticipant.id)
+                  .where(
+                    (s) =>
+                        myParticipant != null && s.userId == myParticipant.id,
+                  )
                   .toList();
               final hasScore = myScores.any((s) => s.holeNumber == holeNumber);
 
               // Determine if this hole can be selected
               // Can select: completed holes OR the next sequential incomplete hole
               // Players can score independently without waiting for others
-              bool canSelect = hasScore || (myScores.isEmpty && holeNumber == 1) ||
+              bool canSelect =
+                  hasScore ||
+                  (myScores.isEmpty && holeNumber == 1) ||
                   (myScores.isNotEmpty &&
-                   myScores.any((s) => s.holeNumber == holeNumber - 1));
+                      myScores.any((s) => s.holeNumber == holeNumber - 1));
 
               return GestureDetector(
-                onTap: canSelect ? () {
-                  setState(() {
-                    _selectedHole = holeNumber;
-                    _strokes = 4; // Reset to default
-                  });
-                } : null,
+                onTap: canSelect
+                    ? () {
+                        setState(() {
+                          _selectedHole = holeNumber;
+                          _strokes = 4; // Reset to default
+                        });
+                      }
+                    : null,
                 child: Opacity(
                   opacity: canSelect ? 1.0 : 0.3,
                   child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  width: 50,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppTheme.hotPink
-                        : hasScore
-                            ? AppTheme.neonGreen.withAlpha(51)
-                            : AppTheme.darkSlateGray,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
+                    margin: const EdgeInsets.only(right: 8),
+                    width: 50,
+                    decoration: BoxDecoration(
                       color: isSelected
                           ? AppTheme.hotPink
                           : hasScore
-                              ? AppTheme.neonGreen
-                              : AppTheme.textMuted,
-                      width: isSelected ? 2 : 1,
+                          ? AppTheme.neonGreen.withAlpha(51)
+                          : AppTheme.darkSlateGray,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppTheme.hotPink
+                            : hasScore
+                            ? AppTheme.neonGreen
+                            : AppTheme.textMuted,
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$holeNumber',
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : hasScore
+                                ? AppTheme.neonGreen
+                                : AppTheme.textPrimary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (hasScore)
+                          Icon(
+                            Icons.check_circle,
+                            color: AppTheme.neonGreen,
+                            size: 12,
+                          ),
+                      ],
                     ),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '$holeNumber',
-                        style: TextStyle(
-                          color: isSelected
-                              ? Colors.white
-                              : hasScore
-                                  ? AppTheme.neonGreen
-                                  : AppTheme.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (hasScore)
-                        Icon(
-                          Icons.check_circle,
-                          color: AppTheme.neonGreen,
-                          size: 12,
-                        ),
-                    ],
-                  ),
-                ),
                 ),
               );
             },
@@ -273,18 +277,12 @@ class _ScoreEntrySheetState extends State<ScoreEntrySheet> {
         children: [
           Text(
             'Hole $_selectedHole',
-            style: const TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: 8),
           Text(
-            'Par 4', // TODO: Get actual par from course data
-            style: TextStyle(
-              color: AppTheme.electricYellow,
-              fontSize: 12,
-            ),
+            'Par 4',
+            style: TextStyle(color: AppTheme.electricYellow, fontSize: 12),
           ),
           const SizedBox(height: 20),
           Row(
@@ -371,7 +369,9 @@ class _ScoreEntrySheetState extends State<ScoreEntrySheet> {
         final participants = betProvider.participants;
 
         if (kDebugMode) {
-          print('🏆 Building leaderboard: ${participants.length} participants, ${betProvider.scores.length} scores');
+          print(
+            '🏆 Building leaderboard: ${participants.length} participants, ${betProvider.scores.length} scores',
+          );
         }
 
         if (participants.isEmpty) {
@@ -394,7 +394,9 @@ class _ScoreEntrySheetState extends State<ScoreEntrySheet> {
           final toPar = scores.fold<int>(0, (sum, s) => sum + s.toPar);
 
           if (kDebugMode) {
-            print('  ${participant.username}: ${scores.length} scores, total=$totalStrokes, toPar=$toPar');
+            print(
+              '  ${participant.username}: ${scores.length} scores, total=$totalStrokes, toPar=$toPar',
+            );
           }
 
           return {
@@ -406,8 +408,10 @@ class _ScoreEntrySheetState extends State<ScoreEntrySheet> {
         }).toList();
 
         // Sort by total strokes (ascending)
-        participantScores.sort((a, b) =>
-          (a['totalStrokes'] as int).compareTo(b['totalStrokes'] as int));
+        participantScores.sort(
+          (a, b) =>
+              (a['totalStrokes'] as int).compareTo(b['totalStrokes'] as int),
+        );
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,7 +442,8 @@ class _ScoreEntrySheetState extends State<ScoreEntrySheet> {
                 final position = index + 1;
 
                 final authProvider = context.read<AuthProvider>();
-                final isCurrentUser = participant.userId == authProvider.user?.id;
+                final isCurrentUser =
+                    participant.userId == authProvider.user?.id;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -520,13 +525,17 @@ class _ScoreEntrySheetState extends State<ScoreEntrySheet> {
                             ),
                           ),
                           Text(
-                            toPar > 0 ? '+$toPar' : toPar < 0 ? '$toPar' : 'E',
+                            toPar > 0
+                                ? '+$toPar'
+                                : toPar < 0
+                                ? '$toPar'
+                                : 'E',
                             style: TextStyle(
                               color: toPar < 0
                                   ? AppTheme.neonGreen
                                   : toPar > 0
-                                      ? Colors.red
-                                      : AppTheme.textSecondary,
+                                  ? Colors.red
+                                  : AppTheme.textSecondary,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),

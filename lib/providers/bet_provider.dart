@@ -158,6 +158,8 @@ class BetProvider with ChangeNotifier {
     bool? isPublic,
     bool? allowOutsideBackers,
     Map<String, dynamic>? settings,
+    required String currencyType,
+    required double platformFeePercentage,
   }) async {
     _isLoading = true;
     notifyListeners();

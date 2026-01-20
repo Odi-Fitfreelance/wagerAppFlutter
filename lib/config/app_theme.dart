@@ -20,6 +20,10 @@ class AppTheme {
   static const Color richPurple = Color(0xFF6B21F5); // Alternative accent
   static const Color neonGreen = Color(0xFF39FF14); // Success/Live indicators
 
+  // Coin colors
+  static const Color goldCoin = Color(0xFFFFD700); // Gold Coins (GC)
+  static const Color sweepsCoin = Color(0xFF4CAF50); // Sweeps Coins (SC)
+
   // Functional colors
   static const Color successColor = neonGreen;
   static const Color warningColor = electricYellow;

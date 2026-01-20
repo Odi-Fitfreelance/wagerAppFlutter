@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../config/app_theme.dart';
 import '../../providers/post_provider.dart';
+import '../../services/post_service.dart';
+import '../../services/api_client.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -48,40 +50,68 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     setState(() => _isLoading = true);
 
     final postProvider = context.read<PostProvider>();
+    final postService = PostService(ApiClient());
 
-    // TODO: Upload media if selected
-    List<String>? mediaUrls;
-    if (_selectedImages != null && _selectedImages!.isNotEmpty) {
-      // For now, we'll skip media upload
-      // In production, upload images using PostService.uploadMedia()
-    }
+    try {
+      // Upload media if selected
+      List<String>? mediaUrls;
+      if (_selectedImages != null && _selectedImages!.isNotEmpty) {
+        mediaUrls = [];
 
-    final post = await postProvider.createPost(
-      content: _contentController.text.trim(),
-      type: _postType,
-      visibility: _visibility,
-      mediaUrls: mediaUrls,
-    );
+        for (final image in _selectedImages!) {
+          try {
+            final mediaUrl = await postService.uploadMedia(image.path);
+            mediaUrls.add(mediaUrl);
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to upload image: $e'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          }
+        }
+      }
 
-    setState(() => _isLoading = false);
+      final post = await postProvider.createPost(
+        content: _contentController.text.trim(),
+        type: _postType,
+        visibility: _visibility,
+        mediaUrls: mediaUrls,
+      );
 
-    if (mounted) {
-      if (post != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Post created successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      } else if (postProvider.errorMessage != null) {
+      setState(() => _isLoading = false);
+
+      if (mounted) {
+        if (post != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Post created successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        } else if (postProvider.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(postProvider.errorMessage!),
+              backgroundColor: Colors.red,
+            ),
+          );
+          postProvider.clearError();
+        }
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(postProvider.errorMessage!),
+            content: Text('Error creating post: $e'),
             backgroundColor: Colors.red,
           ),
         );
-        postProvider.clearError();
       }
     }
   }

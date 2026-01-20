@@ -1,3 +1,4 @@
+// android/build.gradle.kts
 allprojects {
     repositories {
         google()
@@ -5,10 +6,11 @@ allprojects {
     }
 }
 
-val newBuildDir: Directory =
-    rootProject.layout.buildDirectory
-        .dir("../../build")
-        .get()
+plugins { 
+    id("com.google.gms.google-services") version "4.4.4" apply false
+}
+
+val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
 rootProject.layout.buildDirectory.value(newBuildDir)
 
 subprojects {
@@ -16,20 +18,31 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 
     afterEvaluate {
-        if (project.hasProperty("android")) {
-            project.extensions.configure<com.android.build.gradle.BaseExtension>("android") {
-                compileOptions {
-                    sourceCompatibility = JavaVersion.VERSION_17
-                    targetCompatibility = JavaVersion.VERSION_17
+        // Only configure if it's an Android project (app or library plugins)
+        if (project.plugins.hasPlugin("com.android.application") ||
+            project.plugins.hasPlugin("com.android.library")) {
+
+            // Access the android extension safely
+            project.extensions.findByName("android")?.let { androidExt ->
+                @Suppress("UNCHECKED_CAST")
+                val android = androidExt as? com.android.build.gradle.BaseExtension
+                android?.compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_21
+                    targetCompatibility = JavaVersion.VERSION_21
+                }
+            }
+
+            // For Kotlin projects/plugins: configure compile tasks using the new compilerOptions DSL
+            project.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+                compilerOptions {
+                    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
                 }
             }
         }
     }
 }
-subprojects {
-    project.evaluationDependsOn(":app")
-}
 
+// Optional: Clean task override (yours is fine, keep if needed)
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

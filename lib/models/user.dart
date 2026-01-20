@@ -9,6 +9,7 @@ class User {
   final String username;
   final DateTime? dateOfBirth;
   final bool isVerified;
+  @Deprecated('Use WalletBalance model instead')
   final double walletBalance;
   final String? profileImageUrl;
   final DateTime? createdAt;
@@ -25,13 +26,38 @@ class User {
   final int followersCount;
   final int followingCount;
 
+  // Sweepstakes compliance fields
+  @JsonKey(name: 'trust_score')
+  final int trustScore; // 0-1000, affects betting permissions
+
+  @JsonKey(name: 'kyc_verified')
+  final bool kycVerified; // KYC verification status
+
+  @JsonKey(name: 'kyc_status')
+  final String? kycStatus; // 'not_submitted', 'pending', 'approved', 'rejected'
+
+  @JsonKey(name: 'is_admin')
+  final bool isAdmin; // Admin privileges
+
+  @JsonKey(name: 'state')
+  final String? state; // US state code for geofencing (e.g., 'CA', 'WA')
+
+  @JsonKey(name: 'country')
+  final String? country; // Country code (e.g., 'US')
+
+  @JsonKey(name: 'is_blocked')
+  final bool isBlocked; // Account blocked status
+
+  @JsonKey(name: 'account_forfeited')
+  final bool accountForfeited; // Fraud/collusion forfeit
+
   User({
     required this.id,
     required this.email,
     required this.username,
     this.dateOfBirth,
     required this.isVerified,
-    required this.walletBalance,
+    this.walletBalance = 0.0,
     this.profileImageUrl,
     this.createdAt,
     this.bio,
@@ -42,6 +68,14 @@ class User {
     this.averageScore,
     this.followersCount = 0,
     this.followingCount = 0,
+    this.trustScore = 500,
+    this.kycVerified = false,
+    this.kycStatus,
+    this.isAdmin = false,
+    this.state,
+    this.country,
+    this.isBlocked = false,
+    this.accountForfeited = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
@@ -64,6 +98,14 @@ class User {
     double? averageScore,
     int? followersCount,
     int? followingCount,
+    int? trustScore,
+    bool? kycVerified,
+    String? kycStatus,
+    bool? isAdmin,
+    String? state,
+    String? country,
+    bool? isBlocked,
+    bool? accountForfeited,
   }) {
     return User(
       id: id ?? this.id,
@@ -82,6 +124,45 @@ class User {
       averageScore: averageScore ?? this.averageScore,
       followersCount: followersCount ?? this.followersCount,
       followingCount: followingCount ?? this.followingCount,
+      trustScore: trustScore ?? this.trustScore,
+      kycVerified: kycVerified ?? this.kycVerified,
+      kycStatus: kycStatus ?? this.kycStatus,
+      isAdmin: isAdmin ?? this.isAdmin,
+      state: state ?? this.state,
+      country: country ?? this.country,
+      isBlocked: isBlocked ?? this.isBlocked,
+      accountForfeited: accountForfeited ?? this.accountForfeited,
     );
+  }
+
+  /// Can user place SC bets?
+  bool get canBetSC => kycVerified && !isBlocked && !accountForfeited;
+
+  /// Can user redeem SC for prizes?
+  bool get canRedeemSC => kycVerified && trustScore >= 300 && !isBlocked;
+
+  /// Is user in restricted state?
+  bool get isInRestrictedState {
+    if (state == null) return false;
+    const restrictedStates = ['WA', 'ID', 'NV', 'MT'];
+    return restrictedStates.contains(state?.toUpperCase());
+  }
+
+  /// Trust score status text
+  String get trustScoreStatus {
+    if (trustScore >= 800) return 'Excellent';
+    if (trustScore >= 600) return 'Good';
+    if (trustScore >= 400) return 'Fair';
+    if (trustScore >= 200) return 'Low';
+    return 'Very Low';
+  }
+
+  /// Trust score color
+  String get trustScoreColor {
+    if (trustScore >= 800) return 'green';
+    if (trustScore >= 600) return 'lightGreen';
+    if (trustScore >= 400) return 'orange';
+    if (trustScore >= 200) return 'deepOrange';
+    return 'red';
   }
 }

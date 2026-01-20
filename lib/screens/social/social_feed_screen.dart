@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../config/app_theme.dart';
 import '../../providers/post_provider.dart';
 import '../../models/post.dart';
@@ -167,6 +168,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'social_feed_fab',
         onPressed: () {
           Navigator.push(
             context,
@@ -467,8 +469,16 @@ class PostCard extends StatelessWidget {
                         size: 20,
                         color: AppTheme.textSecondary,
                       ),
-                      onPressed: () {
-                        // TODO: Implement share
+                      onPressed: () async {
+                        // Share post content
+                        final shareText = 'Check out this post from @${post.username}:\n\n'
+                            '${post.content}\n\n'
+                            'Shared via FriendlyWager';
+
+                        await Share.share(
+                          shareText,
+                          subject: 'Post from @${post.username}',
+                        );
                       },
                     ),
                   ],

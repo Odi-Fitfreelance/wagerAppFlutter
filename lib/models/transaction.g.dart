@@ -16,6 +16,9 @@ Transaction _$TransactionFromJson(Map<String, dynamic> json) => Transaction(
   description: json['description'] as String?,
   referenceId: json['reference_id'] as String?,
   createdAt: DateTime.parse(json['created_at'] as String),
+  bonusType: json['bonus_type'] as String?,
+  gcAmount: (json['gc_amount'] as num?)?.toInt(),
+  scAmount: (json['sc_amount'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$TransactionToJson(Transaction instance) =>
@@ -29,6 +32,9 @@ Map<String, dynamic> _$TransactionToJson(Transaction instance) =>
       'description': instance.description,
       'reference_id': instance.referenceId,
       'created_at': instance.createdAt.toIso8601String(),
+      'bonus_type': instance.bonusType,
+      'gc_amount': instance.gcAmount,
+      'sc_amount': instance.scAmount,
     };
 
 const _$TransactionTypeEnumMap = {
@@ -46,6 +52,17 @@ const _$TransactionTypeEnumMap = {
   TransactionType.outsideBetWon: 'outside_bet_won',
   TransactionType.achievementBonus: 'achievement_bonus',
   TransactionType.judgeFee: 'judge_fee',
+  TransactionType.bundlePurchase: 'bundle_purchase',
+  TransactionType.scBonus: 'sc_bonus',
+  TransactionType.scRedemption: 'sc_redemption',
+  TransactionType.amoeGrant: 'amoe_grant',
+  TransactionType.viralMilestoneBonus: 'viral_milestone_bonus',
+  TransactionType.referralBonus: 'referral_bonus',
+  TransactionType.playthroughProgress: 'playthrough_progress',
+  TransactionType.platformFee: 'platform_fee',
+  TransactionType.kycSubmission: 'kyc_submission',
+  TransactionType.kycCompletion: 'kyc_completion',
+  TransactionType.bonus: 'bonus',
 };
 
 WalletStats _$WalletStatsFromJson(Map<String, dynamic> json) => WalletStats(

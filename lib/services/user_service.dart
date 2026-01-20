@@ -17,11 +17,14 @@ class UserService {
     double? handicap,
     String? favoriteCourse,
   }) async {
-    final response = await _client.patch('/users/profile', data: {
-      if (bio != null) 'bio': bio,
-      if (handicap != null) 'handicap': handicap,
-      if (favoriteCourse != null) 'favoriteCourse': favoriteCourse,
-    });
+    final response = await _client.patch(
+      '/users/profile',
+      data: {
+        if (bio != null) 'bio': bio,
+        if (handicap != null) 'handicap': handicap,
+        if (favoriteCourse != null) 'favoriteCourse': favoriteCourse,
+      },
+    );
     return User.fromJson(response.data['user']);
   }
 
@@ -51,8 +54,6 @@ class UserService {
   }
 
   Future<void> deleteAccount(String password) async {
-    await _client.delete('/users/account', data: {
-      'password': password,
-    });
+    await _client.delete('/users/account', data: {'password': password});
   }
 }

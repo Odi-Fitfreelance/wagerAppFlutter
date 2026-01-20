@@ -3,7 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
+import '../../services/api_client.dart';
 import 'change_password_screen.dart';
+import '../legal/terms_of_service_screen.dart';
+import '../legal/privacy_policy_screen.dart';
+import '../legal/help_support_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -52,11 +58,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool(key, value);
   }
 
+  void _showChangeEmailDialog() {
+    showDialog(context: context, builder: (context) => _ChangeEmailDialog());
+  }
+
   void _showDeleteAccountDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => _DeleteAccountDialog(),
-    );
+    showDialog(context: context, builder: (context) => _DeleteAccountDialog());
   }
 
   @override
@@ -94,13 +101,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.person_outline,
             title: 'Username',
             value: '@${user?.username ?? 'unknown'}',
-          ),
-          _buildInfoCard(
-            icon: Icons.calendar_today_outlined,
-            title: 'Member Since',
-            value: user?.createdAt != null
-                ? '${user!.createdAt!.year}'
-                : 'Unknown',
           ),
 
           const SizedBox(height: 24),
@@ -236,12 +236,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildActionTile(
                   icon: Icons.email_outlined,
                   title: 'Change Email',
-                  onTap: () {
-                    // TODO: Implement change email
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Coming soon')),
-                    );
-                  },
+                  onTap: _showChangeEmailDialog,
                 ),
               ],
             ),
@@ -258,7 +253,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.description_outlined,
                   title: 'Terms of Service',
                   onTap: () {
-                    // TODO: Navigate to ToS
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TermsOfServiceScreen(),
+                      ),
+                    );
                   },
                 ),
                 const Divider(color: AppTheme.textMuted, height: 1),
@@ -266,7 +266,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.privacy_tip_outlined,
                   title: 'Privacy Policy',
                   onTap: () {
-                    // TODO: Navigate to Privacy Policy
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    );
                   },
                 ),
                 const Divider(color: AppTheme.textMuted, height: 1),
@@ -274,7 +279,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.help_outline,
                   title: 'Help & Support',
                   onTap: () {
-                    // TODO: Navigate to Help Center
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HelpSupportScreen(),
+                      ),
+                    );
                   },
                 ),
               ],
@@ -385,10 +395,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
-          color: AppTheme.textSecondary,
-          fontSize: 12,
-        ),
+        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
       ),
       value: value,
       onChanged: onChanged,
@@ -454,8 +461,9 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implement delete account API call
-      await Future.delayed(const Duration(seconds: 2));
+      // Call backend API to delete account
+      final userService = UserService(ApiClient());
+      await userService.deleteAccount(_passwordController.text);
 
       if (mounted) {
         Navigator.pop(context);
@@ -514,7 +522,10 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text('Cancel', style: TextStyle(color: AppTheme.neonBlue)),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: AppTheme.neonBlue),
+          ),
         ),
         TextButton(
           onPressed: _isLoading ? null : _deleteAccount,
@@ -528,6 +539,148 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
                   ),
                 )
               : const Text('Delete', style: TextStyle(color: AppTheme.hotPink)),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChangeEmailDialog extends StatefulWidget {
+  @override
+  State<_ChangeEmailDialog> createState() => _ChangeEmailDialogState();
+}
+
+class _ChangeEmailDialogState extends State<_ChangeEmailDialog> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changeEmail() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Validate email format
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(_emailController.text)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid email address'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Call backend API to change email
+      final authService = AuthService(ApiClient());
+      await authService.changeEmail(
+        newEmail: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email changed successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppTheme.darkSlateGray,
+      title: const Text(
+        'Change Email',
+        style: TextStyle(color: AppTheme.neonBlue),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Enter your new email and password to confirm.',
+            style: TextStyle(color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              labelText: 'New Email',
+              prefixIcon: Icon(Icons.email_outlined),
+            ),
+            style: const TextStyle(color: AppTheme.textPrimary),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Password',
+              prefixIcon: Icon(Icons.lock_outline),
+            ),
+            style: const TextStyle(color: AppTheme.textPrimary),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: AppTheme.neonBlue),
+          ),
+        ),
+        TextButton(
+          onPressed: _isLoading ? null : _changeEmail,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppTheme.neonBlue,
+                  ),
+                )
+              : const Text(
+                  'Change Email',
+                  style: TextStyle(color: AppTheme.neonBlue),
+                ),
         ),
       ],
     );

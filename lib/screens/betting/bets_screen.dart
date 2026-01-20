@@ -7,6 +7,7 @@ import '../../models/bet.dart';
 import 'create_bet_screen.dart';
 import 'score_entry_sheet.dart';
 import 'bet_details_screen.dart';
+import '../home/challenge_detail_screen.dart';
 
 class BetsScreen extends StatefulWidget {
   const BetsScreen({super.key});
@@ -79,6 +80,7 @@ class _BetsScreenState extends State<BetsScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'bets_screen_fab',
         onPressed: () {
           Navigator.push(
             context,
@@ -434,6 +436,21 @@ class _BetCard extends StatelessWidget {
             final authProvider = context.read<AuthProvider>();
             final betProvider = context.read<BetProvider>();
 
+            // Check if this is a video challenge
+            final isVideoChallenge = bet.settings?['isVideoChallenge'] == true;
+
+            if (isVideoChallenge) {
+              // Navigate to video challenge detail screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChallengeDetailScreen(challengeId: bet.id),
+                ),
+              );
+              return;
+            }
+
+            // For golf bets, continue with existing logic
             // Load participants to check if user is a participant
             await betProvider.loadParticipants(bet.id);
 

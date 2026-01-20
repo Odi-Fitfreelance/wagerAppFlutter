@@ -1,11 +1,20 @@
+// ignore_for_file: unused_element
+
 import 'package:betcha_flutter/models/transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/wallet_provider.dart';
+import '../../providers/kyc_provider.dart';
+import '../../widgets/coin_balance_card.dart';
+import '../../widgets/playthrough_indicator.dart';
 import '../settings/settings_screen.dart';
 import '../profile/edit_profile_screen.dart';
+import 'bundle_purchase_screen.dart';
+import 'redeem_screen.dart';
+import 'amoe_screen.dart';
+import '../kyc/kyc_status_screen.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -18,6 +27,7 @@ class _WalletScreenState extends State<WalletScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = false;
+  bool _hasLoadedTransactions = false;
 
   @override
   void initState() {
@@ -36,20 +46,34 @@ class _WalletScreenState extends State<WalletScreen>
 
   Future<void> _loadData() async {
     final walletProvider = context.read<WalletProvider>();
+    final kycProvider = context.read<KYCProvider>();
     await Future.wait([
       walletProvider.loadBalance(),
+      walletProvider.loadBundles(),
       walletProvider.loadStats(),
+      kycProvider.loadStatus(),
     ]);
   }
 
   Future<void> _handleRefresh() async {
     final authProvider = context.read<AuthProvider>();
     final walletProvider = context.read<WalletProvider>();
+    final kycProvider = context.read<KYCProvider>();
+
+    // Reset transaction load flag to allow reloading
+    _hasLoadedTransactions = false;
+
     await Future.wait([
       authProvider.refreshUser(),
       walletProvider.loadBalance(),
+      walletProvider.loadBundles(),
       walletProvider.loadStats(),
+      walletProvider.loadTransactions(),
+      kycProvider.loadStatus(),
     ]);
+
+    // Mark transactions as loaded after refresh
+    _hasLoadedTransactions = true;
   }
 
   Future<void> _handlePurchasePoints(int amount, String price) async {
@@ -167,8 +191,8 @@ class _WalletScreenState extends State<WalletScreen>
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
       body: SafeArea(
-        child: Consumer2<AuthProvider, WalletProvider>(
-          builder: (context, authProvider, walletProvider, child) {
+        child: Consumer3<AuthProvider, WalletProvider, KYCProvider>(
+          builder: (context, authProvider, walletProvider, kycProvider, child) {
             final user = authProvider.user;
 
             if (user == null) {
@@ -292,45 +316,164 @@ class _WalletScreenState extends State<WalletScreen>
 
                         const SizedBox(height: 16),
 
-                        // Balance Card
-                        Container(
-                          padding: const EdgeInsets.all(28),
-                          decoration: BoxDecoration(
-                            gradient: AppTheme.primaryGradient,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [AppTheme.neonGlow(AppTheme.hotPink)],
+                        // Dual Coin Balance Cards
+                        DualCoinBalance(
+                          gcBalance: walletProvider.gcBalance,
+                          scBalance: walletProvider.scBalance,
+                          gcEscrow: walletProvider.walletBalance?.escrowGc,
+                          scEscrow: walletProvider.walletBalance?.escrowSc,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Playthrough Indicator
+                        if (walletProvider.scBalance > 0)
+                          PlaythroughIndicator(
+                            redeemableSc: walletProvider.redeemableSc,
+                            playthroughRemaining:
+                                walletProvider.scPlaythroughRemaining,
                           ),
-                          child: Column(
-                            children: [
-                              Text(
-                                'Available Balance',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withAlpha(230),
-                                  fontWeight: FontWeight.w600,
+
+                        const SizedBox(height: 16),
+
+                        // Quick Action Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const BundlePurchaseScreen(),
+                                    ),
+                                  ).then((_) => _loadData());
+                                },
+                                icon: const Icon(Icons.add_circle_outline),
+                                label: const Text('Buy Coins'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.hotPink,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                walletProvider.balance.toInt().toString(),
-                                style: const TextStyle(
-                                  fontSize: 52,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const RedeemScreen(),
+                                    ),
+                                  ).then((_) => _loadData());
+                                },
+                                icon: const Icon(Icons.card_giftcard),
+                                label: const Text('Redeem SC'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4CAF50),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'POINTS',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white.withAlpha(230),
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 2,
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Secondary Actions
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const AMOEScreen(),
+                                    ),
+                                  ).then((_) => _loadData());
+                                },
+                                icon: const Icon(
+                                  Icons.stars,
+                                  color: Color(0xFF4CAF50),
+                                ),
+                                label: const Text(
+                                  'Free SC',
+                                  style: TextStyle(color: AppTheme.textPrimary),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  side: const BorderSide(
+                                    color: Color(0xFF4CAF50),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Consumer<KYCProvider>(
+                                builder: (context, kycProvider, child) {
+                                  return OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const KYCStatusScreen(),
+                                        ),
+                                      ).then((_) => _loadData());
+                                    },
+                                    icon: Icon(
+                                      kycProvider.isApproved
+                                          ? Icons.verified_user
+                                          : Icons.verified_user_outlined,
+                                      color: kycProvider.isApproved
+                                          ? Colors.green
+                                          : AppTheme.neonBlue,
+                                    ),
+                                    label: Text(
+                                      kycProvider.isApproved
+                                          ? 'Verified'
+                                          : 'Verify ID',
+                                      style: const TextStyle(
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      side: BorderSide(
+                                        color: kycProvider.isApproved
+                                            ? Colors.green
+                                            : AppTheme.neonBlue,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ),
 
                         const SizedBox(height: 20),
@@ -393,34 +536,31 @@ class _WalletScreenState extends State<WalletScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Purchase Section
-          const Text(
-            'Purchase Points',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+          // Info Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4CAF50).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF4CAF50).withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.info_outline, color: Color(0xFF4CAF50)),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Play with GC for fun or SC for prizes! SC can be redeemed for gift cards.',
+                    style: TextStyle(fontSize: 14, color: AppTheme.textPrimary),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Buy more points to place bigger bets and redeem better rewards',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 16),
 
-          // Point Packages
-          _buildPurchaseButton(500, '4.99', badge: null),
-          const SizedBox(height: 12),
-          _buildPurchaseButton(1000, '9.99', badge: 'Best Value!'),
-          const SizedBox(height: 12),
-          _buildPurchaseButton(2500, '19.99', badge: null),
-
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
           // Stats Section
           const Text(
@@ -508,9 +648,13 @@ class _WalletScreenState extends State<WalletScreen>
   }
 
   Widget _buildHistoryTab(WalletProvider walletProvider) {
-    if (walletProvider.transactions.isEmpty) {
+    // Only load transactions once when tab is first viewed
+    if (walletProvider.transactions.isEmpty && !_hasLoadedTransactions) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        walletProvider.loadTransactions();
+        if (!_hasLoadedTransactions) {
+          _hasLoadedTransactions = true;
+          walletProvider.loadTransactions();
+        }
       });
     }
 
@@ -642,6 +786,7 @@ class _WalletScreenState extends State<WalletScreen>
     );
   }
 
+  // ignore: strict_top_level_inference
   Widget _buildTransactionCard(transaction) {
     final isCredit = transaction.isCredit;
     final color = isCredit ? AppTheme.neonGreen : AppTheme.hotPink;
@@ -707,10 +852,12 @@ class _WalletScreenState extends State<WalletScreen>
     );
   }
 
+  // ignore: strict_top_level_inference
   IconData _getTransactionIcon(type) {
     switch (type.toString()) {
       case 'TransactionType.purchase':
       case 'TransactionType.pointsPurchase':
+      case 'TransactionType.bundlePurchase':
         return Icons.add_circle_outline;
       case 'TransactionType.betPlaced':
       case 'TransactionType.outsideBetPlaced':
@@ -721,20 +868,47 @@ class _WalletScreenState extends State<WalletScreen>
       case 'TransactionType.betLost':
         return Icons.trending_down;
       case 'TransactionType.redeem':
+      case 'TransactionType.scRedemption':
         return Icons.card_giftcard;
       case 'TransactionType.betRefund':
       case 'TransactionType.betCancelled':
         return Icons.replay;
+      case 'TransactionType.scBonus':
+      case 'TransactionType.amoeGrant':
+      case 'TransactionType.viralMilestoneBonus':
+      case 'TransactionType.referralBonus':
+        return Icons.stars;
+      case 'TransactionType.playthroughProgress':
+        return Icons.trending_up;
+      case 'TransactionType.platformFee':
+        return Icons.receipt;
       default:
         return Icons.monetization_on;
     }
   }
 
+  // ignore: strict_top_level_inference
   String _getTransactionTitle(type) {
     switch (type.toString()) {
       case 'TransactionType.purchase':
       case 'TransactionType.pointsPurchase':
         return 'Points Purchase';
+      case 'TransactionType.bundlePurchase':
+        return 'Bundle Purchase';
+      case 'TransactionType.scBonus':
+        return 'Free SC Bonus';
+      case 'TransactionType.scRedemption':
+        return 'SC Redeemed';
+      case 'TransactionType.amoeGrant':
+        return 'Free SC (AMOE)';
+      case 'TransactionType.viralMilestoneBonus':
+        return 'Viral Milestone Bonus';
+      case 'TransactionType.referralBonus':
+        return 'Referral Bonus';
+      case 'TransactionType.playthroughProgress':
+        return 'Playthrough Progress';
+      case 'TransactionType.platformFee':
+        return 'Platform Fee';
       case 'TransactionType.betPlaced':
         return 'Bet Placed';
       case 'TransactionType.betWon':

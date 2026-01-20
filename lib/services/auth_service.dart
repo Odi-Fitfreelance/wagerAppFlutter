@@ -69,7 +69,7 @@ class AuthService {
     required String currentPassword,
     required String newPassword,
   }) async {
-    await _client.post('/auth/change-password', data: {
+    await _client.patch('/auth/change-password', data: {
       'currentPassword': currentPassword,
       'newPassword': newPassword,
     });
@@ -79,7 +79,7 @@ class AuthService {
     required String newEmail,
     required String password,
   }) async {
-    await _client.post('/auth/change-email', data: {
+    await _client.patch('/auth/change-email', data: {
       'newEmail': newEmail,
       'password': password,
     });

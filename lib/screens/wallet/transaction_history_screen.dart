@@ -61,6 +61,28 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         return 'Achievement Bonus';
       case TransactionType.judgeFee:
         return 'Judge Fee';
+      case TransactionType.bundlePurchase:
+        return 'Bundle Purchase';
+      case TransactionType.scBonus:
+        return 'SC Bonus';
+      case TransactionType.scRedemption:
+        return 'SC Redeemed';
+      case TransactionType.amoeGrant:
+        return 'Free SC (AMOE)';
+      case TransactionType.viralMilestoneBonus:
+        return 'Viral Bonus';
+      case TransactionType.referralBonus:
+        return 'Referral Bonus';
+      case TransactionType.playthroughProgress:
+        return 'Playthrough';
+      case TransactionType.platformFee:
+        return 'Platform Fee';
+      case TransactionType.kycSubmission:
+        return 'KYC Submission';
+      case TransactionType.kycCompletion:
+        return 'KYC Completed';
+      case TransactionType.bonus:
+        return 'Bonus';
     }
   }
 
@@ -90,6 +112,28 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         return Icons.stars;
       case TransactionType.judgeFee:
         return Icons.gavel;
+      case TransactionType.bundlePurchase:
+        return Icons.shopping_cart;
+      case TransactionType.scBonus:
+        return Icons.star;
+      case TransactionType.scRedemption:
+        return Icons.redeem;
+      case TransactionType.amoeGrant:
+        return Icons.mail_outline;
+      case TransactionType.viralMilestoneBonus:
+        return Icons.trending_up;
+      case TransactionType.referralBonus:
+        return Icons.group_add;
+      case TransactionType.playthroughProgress:
+        return Icons.loop;
+      case TransactionType.platformFee:
+        return Icons.payments;
+      case TransactionType.kycSubmission:
+        return Icons.upload_file;
+      case TransactionType.kycCompletion:
+        return Icons.verified_user;
+      case TransactionType.bonus:
+        return Icons.card_giftcard;
     }
   }
 
@@ -111,18 +155,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
             color: AppTheme.darkSlateGray,
             onSelected: _applyFilter,
             itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: null,
-                child: Text('All Transactions'),
-              ),
+              const PopupMenuItem(value: null, child: Text('All Transactions')),
               const PopupMenuItem(
                 value: 'bet_placed',
                 child: Text('Bets Placed'),
               ),
-              const PopupMenuItem(
-                value: 'bet_won',
-                child: Text('Bets Won'),
-              ),
+              const PopupMenuItem(value: 'bet_won', child: Text('Bets Won')),
               const PopupMenuItem(
                 value: 'points_purchase',
                 child: Text('Purchases'),
@@ -139,9 +177,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         builder: (context, walletProvider, child) {
           if (walletProvider.isLoading) {
             return Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.hotPink,
-              ),
+              child: CircularProgressIndicator(color: AppTheme.hotPink),
             );
           }
 
@@ -150,11 +186,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: AppTheme.hotPink,
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: AppTheme.hotPink),
                   const SizedBox(height: 16),
                   Text(
                     walletProvider.errorMessage!,
@@ -229,14 +261,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       decoration: BoxDecoration(
         color: AppTheme.darkSlateGray,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withAlpha(51),
-          width: 1,
-        ),
+        border: Border.all(color: color.withAlpha(51), width: 1),
       ),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           width: 48,
           height: 48,
@@ -276,10 +304,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
             const SizedBox(height: 4),
             Text(
               DateFormat('MMM dd, yyyy • HH:mm').format(transaction.createdAt),
-              style: TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
             ),
           ],
         ),

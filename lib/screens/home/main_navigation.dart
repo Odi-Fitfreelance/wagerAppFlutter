@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../betting/bets_screen.dart';
 import '../social/social_feed_screen.dart';
-import '../betting/create_bet_screen.dart';
+import 'challenges_list_screen.dart';
+import 'create_challenge_screen.dart';
 import 'profile_screen.dart';
 
 /// Main navigation with bottom tabs
-/// Simplified from the React Native app's 4-stack architecture
+/// Features challenges list as home with FAB to create new challenges
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
@@ -18,10 +19,10 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const BetsScreen(),
-    const SocialFeedScreen(),
-    const CreateBetScreen(),
-    const ProfileScreen(),
+    const ChallengesListScreen(), // Home - Browse video challenges
+    const BetsScreen(), // My Bets
+    const SocialFeedScreen(), // Social Feed
+    const ProfileScreen(), // Profile
   ];
 
   @override
@@ -31,6 +32,29 @@ class _MainNavigationState extends State<MainNavigation> {
         index: _currentIndex,
         children: _screens,
       ),
+      floatingActionButton: _currentIndex == 0
+          ? FloatingActionButton.extended(
+              heroTag: 'main_nav_create_challenge',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CreateChallengeScreen(),
+                  ),
+                );
+              },
+              backgroundColor: AppTheme.neonGreen,
+              icon: const Icon(Icons.add),
+              label: const Text(
+                'NEW CHALLENGE',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppTheme.deepNavy,
@@ -49,16 +73,20 @@ class _MainNavigationState extends State<MainNavigation> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(
-                  icon: Icons.golf_course,
-                  label: 'Bets',
+                  icon: Icons.video_library,
+                  label: 'Challenges',
                   index: 0,
+                ),
+                _buildNavItem(
+                  icon: Icons.golf_course,
+                  label: 'My Bets',
+                  index: 1,
                 ),
                 _buildNavItem(
                   icon: Icons.feed_outlined,
                   label: 'Social',
-                  index: 1,
+                  index: 2,
                 ),
-                _buildCreateButton(),
                 _buildNavItem(
                   icon: Icons.person_rounded,
                   label: 'Profile',
@@ -79,6 +107,9 @@ class _MainNavigationState extends State<MainNavigation> {
     bool hasLiveDot = false,
   }) {
     final isSelected = _currentIndex == index;
+    final iconColor = isSelected ? AppTheme.hotPink : AppTheme.textSecondary;
+    final textColor = isSelected ? AppTheme.hotPink : AppTheme.textSecondary;
+
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _currentIndex = index),
@@ -92,7 +123,7 @@ class _MainNavigationState extends State<MainNavigation> {
                   Icon(
                     icon,
                     size: 28,
-                    color: isSelected ? AppTheme.hotPink : AppTheme.textSecondary,
+                    color: iconColor,
                   ),
                   if (hasLiveDot)
                     Positioned(
@@ -116,34 +147,11 @@ class _MainNavigationState extends State<MainNavigation> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? AppTheme.hotPink : AppTheme.textSecondary,
+                  color: textColor,
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCreateButton() {
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = 2),
-      child: Container(
-        width: 56,
-        height: 56,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          gradient: AppTheme.primaryGradient,
-          shape: BoxShape.circle,
-          boxShadow: [
-            AppTheme.neonGlow(AppTheme.hotPink, blurRadius: 16),
-          ],
-        ),
-        child: Icon(
-          Icons.add_rounded,
-          color: Colors.white,
-          size: 32,
         ),
       ),
     );

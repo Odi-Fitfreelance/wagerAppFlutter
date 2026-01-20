@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../providers/bet_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/wallet_provider.dart';
+import '../../providers/kyc_provider.dart';
+import '../../widgets/currency_selector.dart';
 
 class CreateBetScreen extends StatefulWidget {
   const CreateBetScreen({super.key});
@@ -21,6 +24,8 @@ class _CreateBetScreenState extends State<CreateBetScreen> {
   bool _isPublic = true;
   bool _allowOutsideBackers = false;
   bool _isLoading = false;
+  CurrencyType _selectedCurrency = CurrencyType.gc;
+  final double _platformFeePercentage = 5.0; // Default 5%
 
   @override
   void dispose() {
@@ -34,17 +39,35 @@ class _CreateBetScreenState extends State<CreateBetScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
+    final walletProvider = context.read<WalletProvider>();
+    final kycProvider = context.read<KYCProvider>();
+
     if (authProvider.user == null) return;
 
-    final stake = double.parse(_stakeController.text);
+    final stake = int.parse(_stakeController.text);
     final maxPlayers = int.parse(_maxPlayersController.text);
+    final currencyType = _selectedCurrency == CurrencyType.gc ? 'gc' : 'sc';
+
+    // Check KYC requirement for SC bets
+    if (_selectedCurrency == CurrencyType.sc && !kycProvider.isApproved) {
+      if (mounted) {
+        _showKYCRequiredDialog();
+      }
+      return;
+    }
 
     // Check if user has enough balance
-    if (authProvider.user!.walletBalance < stake) {
+    final availableBalance = _selectedCurrency == CurrencyType.gc
+        ? walletProvider.gcBalance
+        : walletProvider.scBalance;
+
+    if (availableBalance < stake) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Insufficient balance to create this bet'),
+          SnackBar(
+            content: Text(
+              'Insufficient ${_selectedCurrency == CurrencyType.gc ? 'GC' : 'SC'} balance to create this bet',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -59,10 +82,12 @@ class _CreateBetScreenState extends State<CreateBetScreen> {
       final bet = await betProvider.createBet(
         name: _nameController.text.trim(),
         betType: _betType,
-        stakeAmount: stake,
+        stakeAmount: stake.toDouble(),
         maxPlayers: maxPlayers,
         isPublic: _isPublic,
         allowOutsideBackers: _allowOutsideBackers,
+        currencyType: currencyType,
+        platformFeePercentage: _platformFeePercentage,
       );
 
       if (mounted) {
@@ -98,6 +123,53 @@ class _CreateBetScreenState extends State<CreateBetScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showKYCRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.darkSlateGray,
+        title: const Text(
+          'KYC Verification Required',
+          style: TextStyle(color: AppTheme.textPrimary),
+        ),
+        content: const Text(
+          'You must complete identity verification before betting with Sweeps Coins. '
+          'This is required by law to ensure fair play and prevent fraud.',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.neonBlue),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/kyc/submit');
+            },
+            child: const Text(
+              'Verify Now',
+              style: TextStyle(color: AppTheme.hotPink),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _calculatePlatformFee(int stake) {
+    return (stake * _platformFeePercentage / 100).round();
+  }
+
+  int _calculateNetPot(int stake, int players) {
+    final totalPot = stake * players;
+    final platformFee = _calculatePlatformFee(totalPot);
+    return totalPot - platformFee;
   }
 
   @override
@@ -204,26 +276,133 @@ class _CreateBetScreenState extends State<CreateBetScreen> {
               ),
               const SizedBox(height: 20),
 
+              // Currency Selector
+              Consumer3<WalletProvider, KYCProvider, AuthProvider>(
+                builder:
+                    (
+                      context,
+                      walletProvider,
+                      kycProvider,
+                      authProvider,
+                      child,
+                    ) {
+                      final user = authProvider.user;
+                      final canUseSC =
+                          kycProvider.isApproved &&
+                          user != null &&
+                          !user.isInRestrictedState;
+
+                      String? scDisabledReason;
+                      if (!kycProvider.isApproved) {
+                        scDisabledReason =
+                            'Complete KYC verification to bet with SC';
+                      } else if (user?.isInRestrictedState == true) {
+                        scDisabledReason =
+                            'SC betting not available in your state';
+                      }
+
+                      return CurrencySelector(
+                        selectedCurrency: _selectedCurrency,
+                        onChanged: (currency) {
+                          setState(() {
+                            _selectedCurrency = currency;
+                          });
+                        },
+                        gcBalance: walletProvider.gcBalance,
+                        scBalance: walletProvider.scBalance,
+                        scEnabled: canUseSC,
+                        scDisabledReason: scDisabledReason,
+                      );
+                    },
+              ),
+              const SizedBox(height: 20),
+
               // Stake Amount
               TextFormField(
                 controller: _stakeController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Stake (points)',
+                decoration: InputDecoration(
+                  labelText: _selectedCurrency == CurrencyType.gc
+                      ? 'Stake (GC)'
+                      : 'Stake (SC)',
                   hintText: '100',
-                  prefixIcon: Icon(Icons.attach_money, color: AppTheme.neonBlue),
+                  prefixIcon: Icon(
+                    _selectedCurrency == CurrencyType.gc
+                        ? Icons.monetization_on
+                        : Icons.stars,
+                    color: _selectedCurrency == CurrencyType.gc
+                        ? const Color(0xFFFFD700)
+                        : const Color(0xFF4CAF50),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter stake amount';
                   }
-                  final stake = double.tryParse(value);
+                  final stake = int.tryParse(value);
                   if (stake == null || stake <= 0) {
                     return 'Please enter a valid amount';
                   }
                   return null;
                 },
+                onChanged: (value) {
+                  setState(() {}); // Trigger rebuild for pot calculation
+                },
               ),
+              const SizedBox(height: 16),
+
+              // Pot Calculation Display
+              if (_stakeController.text.isNotEmpty &&
+                  int.tryParse(_stakeController.text) != null &&
+                  int.tryParse(_maxPlayersController.text) != null)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.darkSlateGray,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _selectedCurrency == CurrencyType.gc
+                          ? const Color(0xFFFFD700).withOpacity(0.3)
+                          : const Color(0xFF4CAF50).withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pot Breakdown',
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildPotRow(
+                        'Total Pot',
+                        int.parse(_stakeController.text) *
+                            int.parse(_maxPlayersController.text),
+                      ),
+                      _buildPotRow(
+                        'Platform Fee (${_platformFeePercentage.toStringAsFixed(0)}%)',
+                        _calculatePlatformFee(
+                          int.parse(_stakeController.text) *
+                              int.parse(_maxPlayersController.text),
+                        ),
+                        isSubtraction: true,
+                      ),
+                      const Divider(color: AppTheme.textMuted, height: 16),
+                      _buildPotRow(
+                        'Winner Takes',
+                        _calculateNetPot(
+                          int.parse(_stakeController.text),
+                          int.parse(_maxPlayersController.text),
+                        ),
+                        isBold: true,
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 20),
 
               // Max Players
@@ -244,6 +423,9 @@ class _CreateBetScreenState extends State<CreateBetScreen> {
                     return 'Players must be between 2 and 8';
                   }
                   return null;
+                },
+                onChanged: (value) {
+                  setState(() {}); // Trigger rebuild for pot calculation
                 },
               ),
               const SizedBox(height: 24),
@@ -274,7 +456,10 @@ class _CreateBetScreenState extends State<CreateBetScreen> {
                       ),
                       subtitle: const Text(
                         'Anyone can join this bet',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                        ),
                       ),
                       value: _isPublic,
                       onChanged: (value) => setState(() => _isPublic = value),
@@ -289,7 +474,10 @@ class _CreateBetScreenState extends State<CreateBetScreen> {
                       ),
                       subtitle: const Text(
                         'Non-players can bet on outcomes',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                        ),
                       ),
                       value: _allowOutsideBackers,
                       onChanged: (value) =>
@@ -335,6 +523,43 @@ class _CreateBetScreenState extends State<CreateBetScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPotRow(
+    String label,
+    int amount, {
+    bool isSubtraction = false,
+    bool isBold = false,
+  }) {
+    final suffix = _selectedCurrency == CurrencyType.gc ? 'GC' : 'SC';
+    final color = _selectedCurrency == CurrencyType.gc
+        ? const Color(0xFFFFD700)
+        : const Color(0xFF4CAF50);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 13,
+              fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+          Text(
+            '${isSubtraction ? '-' : ''}${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} $suffix',
+            style: TextStyle(
+              color: isBold ? color : AppTheme.textPrimary,
+              fontSize: 14,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

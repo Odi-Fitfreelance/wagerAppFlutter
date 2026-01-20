@@ -31,6 +31,30 @@ enum TransactionType {
   achievementBonus,
   @JsonValue('judge_fee')
   judgeFee,
+  // Sweepstakes transaction types
+  @JsonValue('bundle_purchase')
+  bundlePurchase,
+  @JsonValue('sc_bonus')
+  scBonus,
+  @JsonValue('sc_redemption')
+  scRedemption,
+  @JsonValue('amoe_grant')
+  amoeGrant,
+  @JsonValue('viral_milestone_bonus')
+  viralMilestoneBonus,
+  @JsonValue('referral_bonus')
+  referralBonus,
+  @JsonValue('playthrough_progress')
+  playthroughProgress,
+  @JsonValue('platform_fee')
+  platformFee,
+  // KYC and bonus transaction types
+  @JsonValue('kyc_submission')
+  kycSubmission,
+  @JsonValue('kyc_completion')
+  kycCompletion,
+  @JsonValue('bonus')
+  bonus,
 }
 
 // Custom converter for amount that handles both num and String
@@ -69,6 +93,16 @@ class Transaction {
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
+  // Sweepstakes-specific fields
+  @JsonKey(name: 'bonus_type')
+  final String? bonusType; // 'signup', 'login_streak', 'referral', 'viral_milestone', etc.
+
+  @JsonKey(name: 'gc_amount')
+  final int? gcAmount; // Gold Coins amount (if applicable)
+
+  @JsonKey(name: 'sc_amount')
+  final int? scAmount; // Sweeps Coins amount (if applicable)
+
   Transaction({
     required this.id,
     this.userId,
@@ -79,6 +113,9 @@ class Transaction {
     this.description,
     this.referenceId,
     required this.createdAt,
+    this.bonusType,
+    this.gcAmount,
+    this.scAmount,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) =>
@@ -94,7 +131,14 @@ class Transaction {
       type == TransactionType.pointsPurchase ||
       type == TransactionType.redeem ||
       type == TransactionType.outsideBetWon ||
-      type == TransactionType.achievementBonus;
+      type == TransactionType.achievementBonus ||
+      type == TransactionType.bundlePurchase ||
+      type == TransactionType.scBonus ||
+      type == TransactionType.amoeGrant ||
+      type == TransactionType.viralMilestoneBonus ||
+      type == TransactionType.referralBonus ||
+      type == TransactionType.kycCompletion ||
+      type == TransactionType.bonus;
 
   bool get isDebit =>
       type == TransactionType.betPlaced ||
@@ -102,7 +146,56 @@ class Transaction {
       type == TransactionType.withdrawal ||
       type == TransactionType.storePurchase ||
       type == TransactionType.outsideBetPlaced ||
-      type == TransactionType.judgeFee;
+      type == TransactionType.judgeFee ||
+      type == TransactionType.scRedemption ||
+      type == TransactionType.platformFee;
+
+  /// Helper to check if this is a sweepstakes transaction
+  bool get isSweepstakes =>
+      type == TransactionType.bundlePurchase ||
+      type == TransactionType.scBonus ||
+      type == TransactionType.scRedemption ||
+      type == TransactionType.amoeGrant ||
+      type == TransactionType.viralMilestoneBonus ||
+      type == TransactionType.referralBonus ||
+      type == TransactionType.playthroughProgress ||
+      type == TransactionType.platformFee;
+
+  /// Display-friendly transaction type text
+  String get typeDisplayText {
+    switch (type) {
+      case TransactionType.bundlePurchase:
+        return 'Bundle Purchase';
+      case TransactionType.scBonus:
+        return 'Free SC Bonus';
+      case TransactionType.scRedemption:
+        return 'SC Redeemed';
+      case TransactionType.amoeGrant:
+        return 'Free SC (AMOE)';
+      case TransactionType.viralMilestoneBonus:
+        return 'Viral Milestone Bonus';
+      case TransactionType.referralBonus:
+        return 'Referral Bonus';
+      case TransactionType.playthroughProgress:
+        return 'Playthrough Progress';
+      case TransactionType.platformFee:
+        return 'Platform Fee';
+      case TransactionType.betPlaced:
+        return 'Bet Placed';
+      case TransactionType.betWon:
+        return 'Bet Won';
+      case TransactionType.betLost:
+        return 'Bet Lost';
+      case TransactionType.kycSubmission:
+        return 'KYC Submission';
+      case TransactionType.kycCompletion:
+        return 'KYC Completed';
+      case TransactionType.bonus:
+        return 'Bonus';
+      default:
+        return type.toString().split('.').last;
+    }
+  }
 }
 
 // Your helper functions (already good)

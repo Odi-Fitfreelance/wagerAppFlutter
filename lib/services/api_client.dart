@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiClient {
-  static const String baseUrl = 'https://friendlywagerbackend.robservices.de/api';
+  static const String baseUrl =
+      'https://friendlywagerbackend.robservices.de/api';
   static const Duration timeout = Duration(seconds: 30);
 
   late final Dio _dio;
@@ -32,12 +33,16 @@ class ApiClient {
           // Inject JWT token from secure storage
           try {
             if (kDebugMode) {
-              print('🔐 [API] Reading token from secure storage for ${options.path}...');
+              print(
+                '🔐 [API] Reading token from secure storage for ${options.path}...',
+              );
             }
             final token = await _secureStorage.read(key: 'auth_token');
             if (token != null) {
               if (kDebugMode) {
-                print('✅ [API] Token found, injecting into Authorization header');
+                print(
+                  '✅ [API] Token found, injecting into Authorization header',
+                );
               }
               options.headers['Authorization'] = 'Bearer $token';
             } else {
@@ -47,7 +52,9 @@ class ApiClient {
             }
           } catch (e) {
             if (kDebugMode) {
-              print('❌ [API] CRITICAL: Failed to read token from secure storage: $e');
+              print(
+                '❌ [API] CRITICAL: Failed to read token from secure storage: $e',
+              );
             }
           }
           return handler.next(options);
@@ -90,10 +97,11 @@ class ApiClient {
       String message;
       if (data is Map<String, dynamic>) {
         // Try to extract detailed error message
-        message = data['message'] ??
-                  data['error'] ??
-                  data['details'] ??
-                  'An error occurred';
+        message =
+            data['message'] ??
+            data['error'] ??
+            data['details'] ??
+            'An error occurred';
 
         // If there's additional error info, log it
         if (data['errors'] != null) {
@@ -127,8 +135,10 @@ class ApiClient {
   }
 
   // GET request
-  Future<Response> get(String endpoint,
-      {Map<String, dynamic>? queryParameters}) async {
+  Future<Response> get(
+    String endpoint, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
     try {
       return await _dio.get(endpoint, queryParameters: queryParameters);
     } on DioException catch (e) {
@@ -178,11 +188,13 @@ class ApiClient {
     String fieldName,
     String filePath, {
     Map<String, dynamic>? additionalData,
+    Map<String, String>? fields,
     ProgressCallback? onSendProgress,
   }) async {
     final formData = FormData.fromMap({
       fieldName: await MultipartFile.fromFile(filePath),
       if (additionalData != null) ...additionalData,
+      if (fields != null) ...fields,
     });
 
     return await _dio.post(
@@ -197,10 +209,7 @@ class ApiException implements Exception {
   final String message;
   final int? statusCode;
 
-  ApiException({
-    required this.message,
-    this.statusCode,
-  });
+  ApiException({required this.message, this.statusCode});
 
   @override
   String toString() => message;
